@@ -1,0 +1,30 @@
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { LeadsModule } from './leads/leads.module';
+import { ContactsModule } from './contacts/contacts.module';
+import { CompaniesModule } from './companies/companies.module';
+import { PipelinesModule } from './pipelines/pipelines.module';
+import { ActivitiesModule } from './activities/activities.module';
+import { CsvImportModule } from './csv-import/csv-import.module';
+import { UsersModule } from './users/users.module';
+import { TasksModule } from './tasks/tasks.module';
+import { NotesModule } from './notes/notes.module';
+import { DealsModule } from './deals/deals.module';
+import { EmailsModule } from './emails/emails.module';
+import { TicketsModule } from './tickets/tickets.module';
+import { LeadContactsModule } from './lead-contacts/lead-contacts.module';
+import { LeadScoresModule } from './lead-scores/lead-scores.module';
+import { DatesModule } from './dates/dates.module';
+import { PipelineDatesModule } from './pipeline-dates/pipeline-dates.module';
+import { MessagesModule } from './messages/messages.module';
+import { ChatsModule } from './chats/chats.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+
+@Module({
+  imports: [LeadsModule, ContactsModule, CompaniesModule, PipelinesModule,  ActivitiesModule, CsvImportModule, UsersModule, TasksModule, NotesModule, DealsModule, EmailsModule, TicketsModule, LeadContactsModule, LeadScoresModule, DatesModule, PipelineDatesModule, MessagesModule, ChatsModule, NotificationsModule, AnalyticsModule],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}

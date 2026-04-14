@@ -1,0 +1,384 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  REP
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  LOST
+}
+
+enum CompanyIndustry {
+  TECHNOLOGY
+  FINANCE
+  HEALTHCARE
+  EDUCATION
+  OTHER
+}
+
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CompanySize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+// Removed ActivityType enum
+
+enum ImportStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketStatus {
+  NEW
+  OPEN
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
+enum PipelineStage {
+  NOUVEAU
+  CONTACTE
+  QUALIFIE
+  PROPOSITION
+  NEGOCIATION
+  GAGNE
+  PERDU
+}
+
+enum DealStatus {
+  PENDING
+  ACTIVE
+  WON
+  LOST
+  CLOSED
+  ON_HOLD
+}
+
+model User {
+  id         Int         @id @default(autoincrement())
+  name       String
+  email      String      @unique
+  password   String
+  role       Role        @default(REP)
+  company    String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  managerId  Int?
+  manager    User?       @relation("ManagerToReps", fields: [managerId], references: [id])
+  reps       User[]      @relation("ManagerToReps")
+  activities Activity[]
+  csvImports CsvImport[]
+  notes      Note[]
+  tasks      Task[]
+  tickets    Ticket[]
+  emails     Email[]
+  leads      Lead[]
+  companies  Company[]
+  contacts         Contact[]
+  pipelines        Pipeline[]
+  deals            Deal[]
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  chats            Chat[]    @relation("ChatUsers")
+  notifications    Notification[]
+}
+
+model Lead {
+  id                Int           @id @default(autoincrement())
+  name              String
+  email             String        
+  phone             String
+  status            LeadStatus    @default(NEW)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  isDeleted         Boolean       @default(false)
+  probability       Float         @default(0)
+  expectedCloseDate DateTime?
+  currency          String?       @default("USD")
+  dealValue         Float?        @default(0)
+  companyId         Int?
+  company           Company?      @relation(fields: [companyId], references: [id])
+  leadScore         LeadScore?
+  notes             Note[]
+  tasks             Task[]
+  tickets           Ticket[]
+  emails            Email[]
+  pipeline          Pipeline?     @relation(fields: [pipelineId], references: [id])
+  pipelineId        Int?
+  deal              Deal[]
+  leadContacts      LeadContact[]
+  userId            Int?
+  user              User?         @relation(fields: [userId], references: [id])
+  @@unique([email,userId])
+}
+
+model Contact {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        
+  phone        String
+  companyId    Int?
+  company      Company?      @relation(fields: [companyId], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  status       ContactStatus @default(ACTIVE)
+  emails       Email[]
+  leadContacts LeadContact[]
+  tickets      Ticket[]
+  userId       Int?
+  user         User?         @relation(fields: [userId], references: [id])
+  @@unique([email,userId])
+}
+
+model Company {
+  id              Int             @id @default(autoincrement())
+  name            String
+  email           String          
+  phone           String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  companyIndustry CompanyIndustry
+  companySize     CompanySize
+  location        String
+  revenue         Float           @default(0)
+  leads           Lead[]
+  contacts        Contact[]
+  userId          Int?
+  user            User?           @relation(fields: [userId], references: [id])
+  @@unique([email,userId])
+}
+
+model Pipeline {
+  id        Int            @id @default(autoincrement())
+  name      String
+  stage     PipelineStage @default(NOUVEAU)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  dates     PipelineDate[]
+  leads     Lead[]
+  userId    Int?
+  user      User?          @relation(fields: [userId], references: [id])
+  deals     Deal[]
+}
+
+model Activity {
+  id           Int      @id @default(autoincrement())
+  type         String
+  title        String
+  description  String   @db.Text
+  entity       String
+  entityId     Int
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model CsvImport {
+  id           Int          @id @default(autoincrement())
+  fileName     String
+  status       ImportStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  user         User         @relation(fields: [userId], references: [id])
+  userId       Int
+  numberOfRows Int
+}
+
+model Task {
+  id        Int        @id @default(autoincrement())
+  title     String
+  dueDate   DateTime
+  status    TaskStatus @default(PENDING)
+  priority  Priority   @default(MEDIUM)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  userId    Int        
+  user      User       @relation(fields: [userId], references: [id])
+  leadId    Int        
+  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model LeadScore {
+  id           Int      @id @default(autoincrement())
+  score        Float
+  calculatedAt DateTime @default(now())
+  leadId       Int      @unique
+  lead         Lead     @relation(fields: [leadId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int      
+  user      User     @relation(fields: [userId], references: [id])
+  leadId    Int
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model Ticket {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  status      TicketStatus @default(NEW)
+  priority    Priority     @default(MEDIUM)
+  userId      Int     
+  user        User     @relation(fields: [userId], references: [id])
+  leadId      Int
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  contactId   Int?
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Date {
+  id        Int            @id @default(autoincrement())
+  date      DateTime       @default(now())
+  pipelines PipelineDate[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model PipelineDate {
+  order      Int
+  dateId     Int
+  pipelineId Int
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  date       Date     @relation(fields: [dateId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@id([dateId, pipelineId])
+}
+
+model Email {
+  id        Int      @id @default(autoincrement())
+  from      String
+  to        String
+  subject   String
+  body      String
+  status    String
+  emailType String
+  sentAt    String
+  leadId    Int?
+  contactId Int?
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  lead      Lead?    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Deal {
+  id                Int        @id @default(autoincrement())
+  name              String
+  amount            Float
+  probability       Float
+  status            DealStatus
+  expectedCloseDate DateTime
+  leadId            Int
+  lead              Lead       @relation(fields: [leadId], references: [id])
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  userId            Int?
+  user              User?      @relation(fields: [userId], references: [id])
+  pipelineId        Int?
+  pipeline          Pipeline?  @relation(fields: [pipelineId], references: [id])
+}
+
+model LeadContact {
+  id        Int      @id @default(autoincrement())
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  contactId Int
+  contact   Contact  @relation(fields: [contactId], references: [id])
+  leadId    Int
+  lead      Lead     @relation(fields: [leadId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  senderId  Int
+  receiverId Int?
+  chatId    String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver  User?    @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  chat      Chat     @relation(fields: [chatId], references: [id])
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  name      String?
+  isGroup   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  messages  Message[]
+  users     User[]   @relation("ChatUsers")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // TASK, LEAD, MEETING, NOTE, SYSTEM
+  message   String
+  isRead    Boolean  @default(false)
+  degree    Priority @default(MEDIUM)
+  relatedId Int?     // e.g., task ID or lead ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
