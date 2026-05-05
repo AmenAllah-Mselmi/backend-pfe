@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
@@ -22,8 +22,15 @@ export class TicketsController {
   @Get()
   @ApiOperation({ summary: 'Retrieve a list of all tickets' })
   @ApiResponse({ status: 200, description: 'A list of tickets has been successfully retrieved.' })
-  findAll(@CurrentUser() user: any) {
-    return this.ticketsService.findAll(user);
+  findAll(
+    @CurrentUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.ticketsService.findAll(user, {
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined
+    });
   }
 
   @Get(':id')

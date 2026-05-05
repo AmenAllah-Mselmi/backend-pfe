@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
@@ -20,10 +20,17 @@ export class ActivitiesController {
   }
 
   @Get()
-    @ApiOperation({ summary: 'Retrieve a list of all activities' })
-    @ApiResponse({ status: 200, description: 'A list of activities has been successfully retrieved.' })
-  findAll(@CurrentUser() user: any) {
-    return this.activitiesService.findAll(user);
+  @ApiOperation({ summary: 'Retrieve a list of all activities' })
+  @ApiResponse({ status: 200, description: 'A list of activities has been successfully retrieved.' })
+  findAll(
+    @CurrentUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.activitiesService.findAll(user, {
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined
+    });
   }
   @ApiOperation({ summary: 'Retrieve a specific activity by ID' })
   @ApiResponse({ status: 200, description: 'The activity has been successfully retrieved.' })

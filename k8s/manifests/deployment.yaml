@@ -34,3 +34,5 @@ spec:
           value: "ddca1c28869e4a"
         - name: NODE_ENV
           value: "dev"
+        - name: SCORING_AI_URL
+          value: "http://ai-agent-service:8000/predict-score"

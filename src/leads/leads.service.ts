@@ -13,25 +13,67 @@ export class LeadsService {
   async create(createLeadDto: CreateLeadDto, user: any) {
     const { companyId, ...rest } = createLeadDto;
 
-    const data: any = { ...rest, userId: user.sub };
-    if (companyId) {
-      const company = await this.prisma.company.findUnique({ where: { id: companyId } });
-      if (company) data.company = { connect: { id: companyId } };;
+    const data: any = { 
+      ...rest, 
+      userId: user.sub ? Number(user.sub) : null 
+    };
+
+    if (companyId && Number(companyId) > 0) {
+      const company = await this.prisma.company.findUnique({ where: { id: Number(companyId) } });
+      if (company) {
+        data.companyId = company.id;
+      } else {
+        throw new Error(`The selected company (ID: ${companyId}) could not be found.`);
+      }
     }
 
-    const lead = await this.prisma.lead.create({ data });
-    return lead;
+    try {
+      return await this.prisma.lead.create({ 
+        data,
+        include: { company: true }
+      });
+    } catch (error) {
+      console.error('Lead Creation Error:', error);
+      
+      if (error.code === 'P2002') {
+        const target = error.meta?.target || 'email/userId';
+        throw new Error(`Conflict: A lead with this ${target} already exists.`);
+      }
+      
+      if (error.code === 'P2003') {
+        throw new Error(`Foreign key constraint failed. Check if provided IDs (company, pipeline, etc.) are valid.`);
+      }
+
+      throw new Error(`Database Error: ${error.message || 'Unknown database error occurred'}`);
+    }
   }
 
-  findAll(user: any) {
+  async findAll(user: any, options?: { page?: number; limit?: number }) {
+    const { page = 1, limit = 10 } = options || {};
+    const skip = (page - 1) * limit;
+
     const whereClause = user.role === 'ADMIN' 
       ? { OR: [{ userId: user.sub }, { user: { managerId: user.sub } }] }
       : { userId: user.sub };
       
-    return this.prisma.lead.findMany({ 
-      where: whereClause,
-      include: { company: true } 
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.lead.findMany({ 
+        where: whereClause,
+        include: { company: true, leadScore: true },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      this.prisma.lead.count({ where: whereClause })
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async findOne(id: number) {

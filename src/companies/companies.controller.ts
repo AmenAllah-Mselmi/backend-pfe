@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UploadedFile, UseInterceptors, Query } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
@@ -23,10 +23,17 @@ export class CompaniesController {
   }
 
   @Get()
-    @ApiOperation({ summary: 'Retrieve a list of all companies' })
-    @ApiResponse({ status: 200, description: 'A list of companies has been successfully retrieved.' })
-  findAll(@CurrentUser() user: any) {
-    return this.companiesService.findAll(user);
+  @ApiOperation({ summary: 'Retrieve a list of all companies' })
+  @ApiResponse({ status: 200, description: 'A list of companies has been successfully retrieved.' })
+  findAll(
+    @CurrentUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.companiesService.findAll(user, {
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined
+    });
   }
 
   @Get(':id')

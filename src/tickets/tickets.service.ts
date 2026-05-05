@@ -44,14 +44,31 @@ export class TicketsService {
     return ticket;
   }
 
-  async findAll(currentUser: any) {
+  async findAll(currentUser: any, options?: { page?: number; limit?: number }) {
+    const { page = 1, limit = 10 } = options || {};
+    const skip = (page - 1) * limit;
+
     const whereClause = currentUser.role === 'ADMIN'
       ? { OR: [{ userId: currentUser.sub }, { user: { managerId: currentUser.sub } }] }
       : { userId: currentUser.sub };
 
-    return await this.prismaService.ticket.findMany({
-      where: whereClause
-    });
+    const [data, total] = await Promise.all([
+      this.prismaService.ticket.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      this.prismaService.ticket.count({ where: whereClause })
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async findOne(id: number) {

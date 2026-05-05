@@ -13,25 +13,69 @@ export class ContactsService {
   async create(createContactDto: CreateContactDto, user: any) {
     const { companyId, ...rest } = createContactDto;
 
-  const data: any = { ...rest, userId: user.sub };
-  if (companyId) {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
-    if (company) data.company = { connect: { id: companyId } }
-    ;
-  }
-    return await this.prisma.contact.create({
-      data
-    });
+    const data: any = { 
+      ...rest, 
+      userId: user.sub ? Number(user.sub) : null 
+    };
+
+    if (companyId && Number(companyId) > 0) {
+      const company = await this.prisma.company.findUnique({ where: { id: Number(companyId) } });
+      if (company) {
+        data.companyId = company.id;
+      } else {
+        // If company provided but not found, we can either throw or just ignore. 
+        // Throwing is safer for data integrity.
+        throw new Error(`The selected company (ID: ${companyId}) could not be found.`);
+      }
+    }
+
+    try {
+      return await this.prisma.contact.create({
+        data,
+        include: { company: true }
+      });
+    } catch (error) {
+      console.error('Contact Creation Error:', error);
+      
+      if (error.code === 'P2002') {
+        const target = error.meta?.target || 'email/userId';
+        throw new Error(`Conflict: A contact with this ${target} already exists.`);
+      }
+      
+      if (error.code === 'P2003') {
+        throw new Error(`Foreign key constraint failed. Check if the provided companyId or userId is valid.`);
+      }
+
+      throw new Error(`Database Error: ${error.message || 'Unknown database error occurred'}`);
+    }
   }
 
-  async findAll(user: any) {
+  async findAll(user: any, options?: { page?: number; limit?: number }) {
+    const { page = 1, limit = 10 } = options || {};
+    const skip = (page - 1) * limit;
+
     const whereClause = user.role === 'ADMIN'
       ? { OR: [{ userId: user.sub }, { user: { managerId: user.sub } }] }
       : { userId: user.sub };
 
-    return await this.prisma.contact.findMany({
-      where: whereClause
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.contact.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: { company: true }
+      }),
+      this.prisma.contact.count({ where: whereClause })
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async findOne(id: number) {

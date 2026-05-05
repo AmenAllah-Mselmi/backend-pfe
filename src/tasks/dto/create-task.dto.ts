@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { TaskStatus, Priority } from "@prisma/client";
-import { IsDate, IsEnum, IsNumber, IsString, IsOptional } from "class-validator";
+import { IsDateString, IsEnum, IsNumber, IsString, IsOptional } from "class-validator";
 import { Type } from "class-transformer";
 
 export class CreateTaskDto {
@@ -8,8 +8,7 @@ export class CreateTaskDto {
     @IsString()
     title: string;
     @ApiProperty({ example: '2024-12-31', description: 'The due date of the task' })
-    @Type(() => Date)
-    @IsDate()
+    @IsDateString()
     dueDate: Date;
     @ApiProperty({ example: 'PENDING', description: 'The status of the task', enum: TaskStatus })
     @IsEnum(TaskStatus)
@@ -24,4 +23,7 @@ export class CreateTaskDto {
     @IsEnum(Priority)
     @IsOptional()
     priority?: Priority;
+
+    @IsOptional()
+    isBroadcast?: boolean;
 }

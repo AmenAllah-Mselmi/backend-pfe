@@ -14,16 +14,41 @@ import { DealsModule } from './deals/deals.module';
 import { EmailsModule } from './emails/emails.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { LeadContactsModule } from './lead-contacts/lead-contacts.module';
-import { LeadScoresModule } from './lead-scores/lead-scores.module';
+import { LeadScoringModule } from './modules/lead-scoring/lead-scoring.module';
 import { DatesModule } from './dates/dates.module';
 import { PipelineDatesModule } from './pipeline-dates/pipeline-dates.module';
 import { MessagesModule } from './messages/messages.module';
 import { ChatsModule } from './chats/chats.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ConfigModule } from '@nestjs/config';
+import { AiEmailModule } from './ai-email/ai-email.module';
 
 @Module({
-  imports: [LeadsModule, ContactsModule, CompaniesModule, PipelinesModule,  ActivitiesModule, CsvImportModule, UsersModule, TasksModule, NotesModule, DealsModule, EmailsModule, TicketsModule, LeadContactsModule, LeadScoresModule, DatesModule, PipelineDatesModule, MessagesModule, ChatsModule, NotificationsModule, AnalyticsModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    LeadsModule, 
+    ContactsModule, 
+    CompaniesModule, 
+    PipelinesModule,  
+    ActivitiesModule, 
+    CsvImportModule, 
+    UsersModule, 
+    TasksModule, 
+    NotesModule, 
+    DealsModule, 
+    EmailsModule, 
+    TicketsModule, 
+    LeadContactsModule, 
+    LeadScoringModule, 
+    DatesModule, 
+    PipelineDatesModule, 
+    MessagesModule, 
+    ChatsModule, 
+    NotificationsModule, 
+    AnalyticsModule, 
+    AiEmailModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

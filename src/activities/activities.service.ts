@@ -34,28 +34,44 @@ export class ActivitiesService {
     });
   }
 
-  async findAll(currentUser: any) {
+  async findAll(currentUser: any, options?: { page?: number; limit?: number }) {
+    const { page = 1, limit = 10 } = options || {};
+    const skip = (page - 1) * limit;
+
     const whereClause = currentUser.role === 'ADMIN'
       ? { OR: [{ userId: currentUser.sub }, { user: { managerId: currentUser.sub } }] }
       : { userId: currentUser.sub };
 
-    const activities = await this.prisma.activity.findMany({
-      where: whereClause,
-      orderBy: {
-        createdAt: 'desc'
-      },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
+    const [activities, total] = await Promise.all([
+      this.prisma.activity.findMany({
+        where: whereClause,
+        orderBy: {
+          createdAt: 'desc'
+        },
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            }
           }
         }
-      }
-    });
+      }),
+      this.prisma.activity.count({ where: whereClause })
+    ]);
 
     // Format activities for the frontend
-    return activities.map(a => this.formatActivity(a));
+    const formattedData = activities.map(a => this.formatActivity(a));
+
+    return {
+      data: formattedData,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async findOne(id: number) {

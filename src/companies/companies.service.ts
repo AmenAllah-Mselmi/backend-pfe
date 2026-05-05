@@ -17,15 +17,32 @@ export class CompaniesService {
     });
   }
 
-  async findAll(user: any) {
+  async findAll(user: any, options?: { page?: number; limit?: number }) {
+    const { page = 1, limit = 10 } = options || {};
+    const skip = (page - 1) * limit;
+
     const whereClause: any = user.role === 'ADMIN'
       ? { OR: [{ userId: user.sub }, { user: { managerId: user.sub } }] }
       : { userId: user.sub };
 
-    return await this.prisma.company.findMany({
-      where: whereClause,
-      include: { contacts: true },
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: { contacts: true },
+      }),
+      this.prisma.company.count({ where: whereClause })
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async findOne(id: number) {

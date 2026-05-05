@@ -244,6 +244,9 @@ model Task {
 model LeadScore {
   id           Int      @id @default(autoincrement())
   score        Float
+  probability  Float?   @default(0)
+  temperature  String?  @default("Cold")
+  reasons      Json?
   calculatedAt DateTime @default(now())
   leadId       Int      @unique
   lead         Lead     @relation(fields: [leadId], references: [id])

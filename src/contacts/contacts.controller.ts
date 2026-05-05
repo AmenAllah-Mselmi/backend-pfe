@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UploadedFile, UseInterceptors, Query } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
@@ -25,8 +25,15 @@ export class ContactsController {
   @Get()
   @ApiOperation({ summary: 'Retrieve a list of all contacts' })
   @ApiResponse({ status: 200, description: 'A list of contacts has been successfully retrieved.' })
-  findAll(@CurrentUser() user: any) {
-    return this.contactsService.findAll(user);
+  findAll(
+    @CurrentUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.contactsService.findAll(user, {
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined
+    });
   }
 
   @Get(':id')

@@ -23,23 +23,41 @@ export class TasksService {
     if (!user) {
       throw new Error(`User with id ${createTaskDto.userId} not found`);
     }
+    const { isBroadcast, ...prismaData } = createTaskDto;
     const task = await this.prisma.task.create({
-      data: createTaskDto,
+      data: prismaData,
     });
 
-    await this.notificationsService.create({
-      userId: task.userId,
-      type: 'TASK',
-      message: `A new task "${task.title}" has been assigned to you.`,
-      degree: task.priority,
-      relatedId: task.id
-    });
+    if (createTaskDto.isBroadcast) {
+      const allUsers = await this.prisma.user.findMany();
+      for (const u of allUsers) {
+        await this.notificationsService.create({
+          userId: u.id,
+          type: 'TASK',
+          message: `Team Task: "${task.title}" (Assigned to: ${user.name})`,
+          degree: task.priority,
+          relatedId: task.id
+        });
+      }
+    } else {
+      await this.notificationsService.create({
+        userId: task.userId,
+        type: 'TASK',
+        message: `A new task "${task.title}" has been assigned to you.`,
+        degree: task.priority,
+        relatedId: task.id
+      });
+    }
 
     return task;
   }
 
- async  findAll() {
-    return await this.prisma.task.findMany();
+  async  findAll() {
+    return await this.prisma.task.findMany({
+      include: {
+        user: true
+      }
+    });
   }
 
  async  findOne(id: number) {
