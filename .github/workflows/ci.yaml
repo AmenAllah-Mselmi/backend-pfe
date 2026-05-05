@@ -110,4 +110,5 @@ jobs:
           git config --global user.name "AmenAllah-Mselmi"
           git add helm/backend-chart/values.yaml
           git commit -m "ci: update image tag to ${{ github.run_id }}"
+          git pull --rebase origin main
           git push
