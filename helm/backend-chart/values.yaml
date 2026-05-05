@@ -8,7 +8,7 @@ image:
   repository: amenallahmselmi/backend
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "24412412920"
+  tag: "25369600910"
 
 ingress:
   enabled: false
