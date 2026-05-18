@@ -23,6 +23,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ConfigModule } from '@nestjs/config';
 import { AiEmailModule } from './ai-email/ai-email.module';
+import { AiChatModule } from './ai-chat/ai-chat.module';
 
 @Module({
   imports: [
@@ -47,7 +48,8 @@ import { AiEmailModule } from './ai-email/ai-email.module';
     ChatsModule, 
     NotificationsModule, 
     AnalyticsModule, 
-    AiEmailModule
+    AiEmailModule,
+    AiChatModule
   ],
   controllers: [AppController],
   providers: [AppService],
