@@ -5,7 +5,6 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
-import { LoginDto } from './dto/login';
 @Injectable()
 export class UsersService {
   constructor(
@@ -69,52 +68,6 @@ export class UsersService {
       access_token: token,
     };
   }
-  async login(dto: LoginDto,response:Response) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-
-    const passwordMatch = await bcrypt.compare(dto.password, user.password);
-
-    if (!passwordMatch)
-      throw new UnauthorizedException('Invalid credentials');
-
-    const { password: _, ...userWithoutPassword } = user;
-    const tokenData = this.generateToken(user.id, user.email,user.role);
-    const isProduction = process.env.NODE_ENV === 'production';
-      response.cookie('token', tokenData.access_token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
-    });
-    response.cookie('isAuthenticated','true',{
-      httpOnly: false,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
-    })
-    response.cookie('userRole',user.role,{
-      httpOnly:false,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
-      maxAge:24*60*60*1000
-    })
-    return {
-      user: userWithoutPassword,
-      ...tokenData
-    };
-  }
-
-  private generateToken(userId: number, email: string,role:string) {
-    const payload = { sub: userId, email ,role};
-
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
-  }
   async findAll(currentUser: any) {
     if (currentUser?.role === 'ADMIN') {
       return await this.prisma.user.findMany({
@@ -158,10 +111,33 @@ export class UsersService {
     if (!user) {
       throw new Error(`User with id ${id} not found`);
     }
+
+    // Hash password if it's being updated
+    let dataToUpdate = { ...updateUserDto };
+    if (dataToUpdate.password) {
+      dataToUpdate.password = await bcrypt.hash(dataToUpdate.password, 10);
+    }
+
     return await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data: dataToUpdate,
     });
+  }
+
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) throw new Error('User not found');
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  async updateProfile(userId: number, updateData: UpdateUserDto) {
+    // We can reuse the update method which handles password hashing
+    const updatedUser = await this.update(userId, updateData);
+    const { password, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
   }
 
   async remove(id: number) {

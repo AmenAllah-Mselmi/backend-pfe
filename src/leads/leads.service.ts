@@ -48,13 +48,17 @@ export class LeadsService {
     }
   }
 
-  async findAll(user: any, options?: { page?: number; limit?: number }) {
-    const { page = 1, limit = 10 } = options || {};
+  async findAll(user: any, options?: { page?: number; limit?: number; search?: string }) {
+    const { page = 1, limit = 10, search } = options || {};
     const skip = (page - 1) * limit;
 
-    const whereClause = user.role === 'ADMIN' 
+    const baseWhere = user.role === 'ADMIN' 
       ? { OR: [{ userId: user.sub }, { user: { managerId: user.sub } }] }
       : { userId: user.sub };
+
+    const whereClause = search
+      ? { AND: [baseWhere, { name: { contains: search } }] }
+      : baseWhere;
       
     const [data, total] = await Promise.all([
       this.prisma.lead.findMany({ 
@@ -93,10 +97,26 @@ export class LeadsService {
     if (!lead) {
       throw new Error(`Lead with id ${id} not found`);
     }
-    return this.prisma.lead.update({
+    const updatedLead = await this.prisma.lead.update({
       where: { id },
       data: updateLeadDto,
     });
+
+    if (updateLeadDto.status && updateLeadDto.status !== lead.status) {
+      await this.prisma.activity.create({
+        data: {
+          type: 'lead_status_change',
+          title: 'Lead Status Changed',
+          description: `Lead "${updatedLead.name}" status changed to ${updateLeadDto.status}`,
+          entity: 'lead',
+          entityId: updatedLead.id,
+          userId: updatedLead.userId || 1,
+          metadata: { entityName: updatedLead.name, oldStatus: lead.status, newStatus: updateLeadDto.status }
+        }
+      });
+    }
+
+    return updatedLead;
   }
 
   async remove(id: number) {

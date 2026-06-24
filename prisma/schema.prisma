@@ -23,6 +23,8 @@ enum LeadStatus {
   NEW
   CONTACTED
   QUALIFIED
+  NEGOCIATION
+  PROPOSITION
   LOST
 }
 

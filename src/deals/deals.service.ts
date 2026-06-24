@@ -25,7 +25,7 @@ export class DealsService {
       });
     }
 
-    return await this.prisma.deal.create({
+    const deal = await this.prisma.deal.create({
       data: { 
         ...dealFields,
         pipelineId,
@@ -33,6 +33,20 @@ export class DealsService {
         userId: user.sub 
       }
     });
+
+    await this.prisma.activity.create({
+      data: {
+        type: 'deal_created',
+        title: 'Deal Created',
+        description: `Deal "${deal.name}" created for Lead: ${lead.name}`,
+        entity: 'deal',
+        entityId: deal.id,
+        userId: user.sub,
+        metadata: { entityName: deal.name, value: deal.amount }
+      }
+    });
+
+    return deal;
   }
 
   async findAll(user: any) {
@@ -62,10 +76,26 @@ export class DealsService {
     if (!deal) {
       throw new Error(`Deal with id ${id} not found`);
     }
-    return await this.prisma.deal.update({
+    const updatedDeal = await this.prisma.deal.update({
       where: { id },
       data: updateDealDto,
     });
+
+    if (updateDealDto.status === 'WON' && deal.status !== 'WON') {
+      await this.prisma.activity.create({
+        data: {
+          type: 'deal_won',
+          title: 'Deal Won',
+          description: `Deal "${updatedDeal.name}" was marked as WON!`,
+          entity: 'deal',
+          entityId: updatedDeal.id,
+          userId: updatedDeal.userId,
+          metadata: { entityName: updatedDeal.name, value: updatedDeal.amount }
+        }
+      });
+    }
+
+    return updatedDeal;
   }
 
   async remove(id: number) {

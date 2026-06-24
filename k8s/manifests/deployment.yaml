@@ -19,20 +19,8 @@ spec:
         image: amenallahmselmi/backend:latest
         ports:
         - containerPort: 3000
-        env:
-        - name: DATABASE_URL
-          value: "mysql://root:rootpassword@mysql:3306/crm"
-        - name: JWT_SECRET
-          value: "hhhh"
-        - name: SMTP_HOST
-          value: "sandbox.smtp.mailtrap.io"
-        - name: SMTP_PORT
-          value: "2525"
-        - name: SMTP_USERNAME
-          value: "803a4163f31935"
-        - name: SMTP_PASSWORD
-          value: "ddca1c28869e4a"
-        - name: NODE_ENV
-          value: "dev"
-        - name: SCORING_AI_URL
-          value: "http://ai-agent-service:8000/predict-score"
+        envFrom:
+        - configMapRef:
+            name: backend-config
+        - secretRef:
+            name: backend-secret

@@ -1,18 +1,34 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Param, Delete, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
 import { CsvImportService } from './csv-import.service';
-import { CreateCsvImportDto } from './dto/create-csv-import.dto';
-import { UpdateCsvImportDto } from './dto/update-csv-import.dto';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { CurrentUser } from 'src/common/decorators/user.decorator';
+
 @ApiTags('CSV Import')
-@Controller('csv-import')
+@Controller('csv')
+@UseGuards(AuthGuard)
 export class CsvImportController {
   constructor(private readonly csvImportService: CsvImportService) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Create a new CSV import record' })
-  @ApiResponse({ status: 201, description: 'The CSV import record has been successfully created.' })
-  create(@Body() createCsvImportDto: CreateCsvImportDto) {
-    return this.csvImportService.create(createCsvImportDto);
+  @Post('upload')
+  @ApiOperation({ summary: 'Upload and parse a CSV file to import leads' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'The CSV file has been successfully uploaded and processed.' })
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFile(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: any) {
+    return this.csvImportService.uploadCsv(file, user.sub);
   }
 
   @Get()
@@ -27,13 +43,6 @@ export class CsvImportController {
   @ApiResponse({ status: 200, description: 'The CSV import record has been successfully retrieved.' })
   findOne(@Param('id') id: string) {
     return this.csvImportService.findOne(+id);
-  }
-
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update an existing CSV import record' })
-  @ApiResponse({ status: 200, description: 'The CSV import record has been successfully updated.' })
-  update(@Param('id') id: string, @Body() updateCsvImportDto: UpdateCsvImportDto) {
-    return this.csvImportService.update(+id, updateCsvImportDto);
   }
 
   @Delete(':id')

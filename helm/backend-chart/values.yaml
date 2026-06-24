@@ -21,3 +21,9 @@ ingress:
       paths:
         - path: /
           pathType: ImplementationSpecific
+env:
+  DATABASE_URL: ""
+  JWT_SECRET: ""
+  SMTP_USERNAME: ""
+  SMTP_PASSWORD: ""
+

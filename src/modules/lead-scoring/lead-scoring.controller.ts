@@ -7,8 +7,14 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 export class LeadScoringController {
   constructor(private readonly leadScoringService: LeadScoringService) {}
 
+  @Get(':id/saved')
+  @ApiOperation({ summary: 'Read saved score from DB without recalculating' })
+  async getSavedScore(@Param('id') leadId: string) {
+    return this.leadScoringService.getSavedScore(+leadId);
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Get current score or recalculate for a specific lead' })
+  @ApiOperation({ summary: 'Force recalculate score for a specific lead' })
   async getScore(@Param('id') leadId: string) {
     return this.leadScoringService.getLeadScore(+leadId);
   }

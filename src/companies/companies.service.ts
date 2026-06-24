@@ -17,13 +17,17 @@ export class CompaniesService {
     });
   }
 
-  async findAll(user: any, options?: { page?: number; limit?: number }) {
-    const { page = 1, limit = 10 } = options || {};
+  async findAll(user: any, options?: { page?: number; limit?: number; search?: string }) {
+    const { page = 1, limit = 10, search } = options || {};
     const skip = (page - 1) * limit;
 
-    const whereClause: any = user.role === 'ADMIN'
+    const baseWhere: any = user.role === 'ADMIN'
       ? { OR: [{ userId: user.sub }, { user: { managerId: user.sub } }] }
       : { userId: user.sub };
+
+    const whereClause = search
+      ? { AND: [baseWhere, { name: { contains: search } }] }
+      : baseWhere;
 
     const [data, total] = await Promise.all([
       this.prisma.company.findMany({

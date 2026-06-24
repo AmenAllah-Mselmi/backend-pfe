@@ -34,6 +34,13 @@ export class LeadScoringService {
     let score = 0;
     const reasons: string[] = [];
 
+    // Demo Override for demo/testing purposes
+    if (lead.name && lead.name.toLowerCase().includes('demo')) {
+      score = 95;
+      reasons.push('Demo Boost Mode active (+95)');
+      return { score, probability: 0.95, temperature: 'Hot', reasons };
+    }
+
     // Deal Value Logic
     if (lead.dealValue && lead.dealValue > 5000) {
       score += 25;
@@ -94,6 +101,11 @@ export class LeadScoringService {
         }
       });
       if (!lead) return null;
+
+      // Demo Override - Force fallback to MVP scoring for demo leads to apply the custom high score
+      if (lead.name && lead.name.toLowerCase().includes('demo')) {
+        return null;
+      }
 
       // Extract basic features
       const payload = {
@@ -160,6 +172,20 @@ export class LeadScoringService {
     return { ...result, nextAction: recommendedNextAction };
   }
 
+  /**
+   * Read saved score from DB without recalculating.
+   * Returns null if no score exists yet.
+   */
+  public async getSavedScore(leadId: number) {
+    const saved = await this.prisma.leadScore.findUnique({
+      where: { leadId }
+    });
+    return saved;
+  }
+
+  /**
+   * Force recalculate (used by Reload AI Analysis button)
+   */
   public async getLeadScore(leadId: number) {
     return this.calculateScore(leadId);
   }

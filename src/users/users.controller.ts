@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Res, UseGuards } fro
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { LoginDto } from './dto/login';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AuthGuard } from '../common/guards/auth.guard';
@@ -21,22 +20,6 @@ export class UsersController {
     return this.usersService.create(createUserDto, response);
   }
 
-  @Post('logout')
-  @ApiOperation({ summary: 'Logout a user physically destroying cookies' })
-  logout(@Res({passthrough:true}) response:Response) {
-    response.clearCookie('token');
-    response.clearCookie('isAuthenticated');
-    response.clearCookie('userRole');
-    return { message: 'Tokens cleared successfully' };
-  }
-
-@Post("login")
-  @ApiOperation({ summary: 'Login a user' })
-  @ApiResponse({ status: 200, description: 'The user has been successfully logged in.' })
-  login(@Body() createAuthDto: LoginDto,@Res({passthrough:true}) response:Response) {
-    return this.usersService.login(createAuthDto,response);
-  }
-
   @Get()
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Retrieve a list of all users' })
@@ -45,7 +28,22 @@ export class UsersController {
     return this.usersService.findAll(user);
   }
 
-  
+  @Get('profile/me')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Retrieve the current user profile' })
+  @ApiResponse({ status: 200, description: 'The profile has been successfully retrieved.' })
+  getProfile(@CurrentUser() user: any) {
+    return this.usersService.getProfile(user.sub);
+  }
+
+  @Patch('profile/me')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Update the current user profile' })
+  @ApiResponse({ status: 200, description: 'The profile has been successfully updated.' })
+  updateProfile(@CurrentUser() user: any, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.updateProfile(user.sub, updateUserDto);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Retrieve a specific user by ID' })
   @ApiResponse({ status: 200, description: 'The user has been successfully retrieved.' })

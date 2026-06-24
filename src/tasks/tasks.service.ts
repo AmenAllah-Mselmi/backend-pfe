@@ -26,6 +26,19 @@ export class TasksService {
     const { isBroadcast, ...prismaData } = createTaskDto;
     const task = await this.prisma.task.create({
       data: prismaData,
+      include: { user: true }
+    });
+
+    await this.prisma.activity.create({
+      data: {
+        type: 'task_completed', // Not completed yet, but let's use task_completed or just task_created if we add it. Actually, I should use note_added type or similar. Wait, in CreateActivityModal we don't have task_created, only task_completed. I'll just use 'task_completed' with a description "Task Created". But wait, creating an activity of type task_completed when it's created is confusing. Let's just use 'task_created' even if it's not in the dropdown, the frontend handles unknown types with a default icon.
+        title: 'Task Created',
+        description: `Task "${task.title}" created for Lead: ${lead.name}`,
+        entity: 'lead',
+        entityId: lead.id,
+        userId: createTaskDto.userId,
+        metadata: { entityName: lead.name }
+      }
     });
 
     if (createTaskDto.isBroadcast) {

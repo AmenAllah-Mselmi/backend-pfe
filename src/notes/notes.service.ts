@@ -19,13 +19,30 @@ export class NotesService {
     if (!user) {
       throw new Error(`User with id ${createNoteDto.userId} not found`);
     }
-    return await this.prisma.note.create({
-      data: createNoteDto
+    const note = await this.prisma.note.create({
+      data: createNoteDto,
+      include: { user: true }
     });
+
+    await this.prisma.activity.create({
+      data: {
+        type: 'note_added',
+        title: 'Note Added',
+        description: `Note added for Lead: ${lead.name}`,
+        entity: 'lead',
+        entityId: lead.id,
+        userId: createNoteDto.userId,
+        metadata: { entityName: lead.name }
+      }
+    });
+
+    return note;
   }
 
   async findAll() {
-    return await this.prisma.note.findMany();
+    return await this.prisma.note.findMany({
+      include: { user: true }
+    });
   }
 
   async findOne(id: number) {

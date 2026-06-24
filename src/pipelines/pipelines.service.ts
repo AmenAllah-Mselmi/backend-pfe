@@ -7,9 +7,23 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class PipelinesService {
   constructor(private readonly prisma: PrismaService) {}
   async create(createPipelineDto: CreatePipelineDto, user: any) {
-    return await this.prisma.pipeline.create({
+    const pipeline = await this.prisma.pipeline.create({
       data: { ...createPipelineDto, userId: user.sub }
     });
+
+    await this.prisma.activity.create({
+      data: {
+        type: 'pipeline_created',
+        title: 'Pipeline Created',
+        description: `Pipeline "${pipeline.name}" created`,
+        entity: 'pipeline',
+        entityId: pipeline.id,
+        userId: user.sub,
+        metadata: { entityName: pipeline.name }
+      }
+    });
+
+    return pipeline;
   }
 
   async findAll(user: any) {

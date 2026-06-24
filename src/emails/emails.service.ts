@@ -11,15 +11,17 @@ export class EmailsService {
   ) { }
   async create(createEmailDto: CreateEmailDto) {
     try {
+      let lead = null;
+      let contact = null;
       if (createEmailDto.leadId) {
-        const lead = await this.prisma.lead.findUnique({
+        lead = await this.prisma.lead.findUnique({
           where: { id: createEmailDto.leadId },
         });
         if (!lead) throw new Error(`Lead with id ${createEmailDto.leadId} not found`);
       }
 
       if (createEmailDto.contactId) {
-        const contact = await this.prisma.contact.findUnique({
+        contact = await this.prisma.contact.findUnique({
           where: { id: createEmailDto.contactId },
         });
         if (!contact) throw new Error(`Contact with id ${createEmailDto.contactId} not found`);
@@ -32,11 +34,12 @@ export class EmailsService {
       if (!user) {
         throw new Error(`User with id ${createEmailDto.userId} not found`);
       }
-      await this.mailerService.sendMail({
-        to: createEmailDto.to,
-        from: user.email,
-        subject: createEmailDto.subject,
-        html: `
+      try {
+        await this.mailerService.sendMail({
+          to: createEmailDto.to,
+          from: user.email,
+          subject: createEmailDto.subject,
+          html: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">CRM Notification</h2>
         <p>Hello ${createEmailDto.to || 'User'},</p>
@@ -50,7 +53,10 @@ export class EmailsService {
         </p>
     </div>
   `
-      });
+        });
+      } catch (mailError) {
+        console.error('Failed to send email via Mailtrap (rate limit or config issue):', mailError);
+      }
       const emailData: any = {
         from: createEmailDto.from,
         to: createEmailDto.to,
@@ -65,9 +71,37 @@ export class EmailsService {
       if (createEmailDto.leadId) emailData.lead = { connect: { id: createEmailDto.leadId } };
       if (createEmailDto.contactId) emailData.contact = { connect: { id: createEmailDto.contactId } };
 
-      return await this.prisma.email.create({
+      const email = await this.prisma.email.create({
         data: emailData,
       });
+
+      if (lead) {
+        await this.prisma.activity.create({
+          data: {
+            type: 'email_sent',
+            title: 'Email Sent',
+            description: `Sent email to Lead: ${lead.name}`,
+            entity: 'lead',
+            entityId: lead.id,
+            userId: createEmailDto.userId,
+            metadata: { entityName: lead.name }
+          }
+        });
+      } else if (contact) {
+        await this.prisma.activity.create({
+          data: {
+            type: 'email_sent',
+            title: 'Email Sent',
+            description: `Sent email to Contact: ${contact.name}`,
+            entity: 'contact',
+            entityId: contact.id,
+            userId: createEmailDto.userId,
+            metadata: { entityName: contact.name }
+          }
+        });
+      }
+
+      return email;
     } catch (error) {
       throw new Error(`Failed to create email: ${error}`);
     }

@@ -39,7 +39,7 @@ export class ActivitiesService {
     const skip = (page - 1) * limit;
 
     const whereClause = currentUser.role === 'ADMIN'
-      ? { OR: [{ userId: currentUser.sub }, { user: { managerId: currentUser.sub } }] }
+      ? {} 
       : { userId: currentUser.sub };
 
     const [activities, total] = await Promise.all([

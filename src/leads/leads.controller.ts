@@ -28,11 +28,13 @@ export class LeadsController {
   findAll(
     @CurrentUser() user: any,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
+    @Query('search') search?: string
   ) {
     return this.leadsService.findAll(user, {
       page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined
+      limit: limit ? parseInt(limit, 10) : undefined,
+      search: search || undefined
     });
   }
 
