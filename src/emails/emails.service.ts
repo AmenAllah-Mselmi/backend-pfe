@@ -37,7 +37,8 @@ export class EmailsService {
       try {
         await this.mailerService.sendMail({
           to: createEmailDto.to,
-          from: user.email,
+          from: process.env.SMTP_USERNAME || '"CRM System" <no-reply@crm.com>',
+          replyTo: user.email,
           subject: createEmailDto.subject,
           html: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -56,6 +57,7 @@ export class EmailsService {
         });
       } catch (mailError) {
         console.error('Failed to send email via Mailtrap (rate limit or config issue):', mailError);
+        throw new Error(`SMTP Error: Failed to send email. Please check configuration.`);
       }
       const emailData: any = {
         from: createEmailDto.from,

@@ -27,10 +27,12 @@ import { AiChatModule } from './ai-chat/ai-chat.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { AutomationModule } from './automation/automation.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    PrometheusModule.register(),
     LeadsModule, 
     ContactsModule, 
     CompaniesModule, 
