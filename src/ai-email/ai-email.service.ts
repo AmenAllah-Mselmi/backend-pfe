@@ -13,8 +13,8 @@ export class AiEmailService {
     if (apiKey && apiKey !== 'your_gemini_api_key_here') {
       this.logger.log('Initializing Gemini AI with provided API Key...');
       this.genAI = new GoogleGenerativeAI(apiKey);
-      // Using gemini-1.5-flash which is widely available
-      this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      // Using gemini-3.5-flash which is widely available
+      this.model = this.genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
     }
   }
 
@@ -102,7 +102,7 @@ export class AiEmailService {
       ...aiOutput,
       isAiGenerated: true,
       reason: [
-        `Generated using Gemini 1.5 AI model.`,
+        `Generated using Gemini 3.5 AI model.`,
         ...mlReasons.slice(0, 2),
         `Context depth: ${notes.length} notes analyzed.`
       ]
